@@ -24,6 +24,10 @@ export interface RoomState {
     mode: EstimationMode;
     revealed: boolean;
     participants: Record<string, Participant>;
+    consensus?: {
+        value: string;
+        description?: string;
+    };
 }
 
 import { Server as NetServer, Socket } from "net";
@@ -48,11 +52,12 @@ export interface ServerToClientEvents {
 }
 
 export interface ClientToServerEvents {
-    "join-room": (data: { roomId: string; name: string }, callback?: (ack: any) => void) => void;
+    "join-room": (data: { roomId: string; name: string }, callback?: (ack: { status: string }) => void) => void;
     "vote": (data: { roomId: string; value: string }) => void;
     "reveal": (data: { roomId: string }) => void;
     "reset-round": (data: { roomId: string }) => void;
     "change-mode": (data: { roomId: string; mode: EstimationMode }) => void;
     "update-avatar": (data: { roomId: string; avatar: string }) => void;
+    "set-consensus": (data: { roomId: string; value: string; description?: string }) => void;
     "ping": () => void;
 }

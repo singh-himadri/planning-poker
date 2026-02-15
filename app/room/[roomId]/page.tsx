@@ -6,7 +6,9 @@ import { getSocket } from "@/lib/socket";
 import { useRoomStore } from "@/store/roomStore";
 import { VotingCards } from "@/components/VotingCards";
 import { Table } from "@/components/Table";
+import { VotesPanel } from "@/components/VotesPanel";
 import { Button } from "@/components/ui/button";
+
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -72,7 +74,8 @@ export default function RoomPage() {
                 // socket.disconnect(); 
             };
         }
-    }, [name, roomId, hasJoined, setRoomState, setUsername]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [name, roomId, hasJoined]); // Safe dependency list for join logic
 
     if (!isClient) return null; // Hydration fix
 
@@ -170,9 +173,15 @@ export default function RoomPage() {
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 flex flex-col items-center justify-center p-4 relative">
-                <Table />
+            <main className="flex-1 flex flex-col md:flex-row items-start justify-center p-4 gap-8 relative overflow-y-auto w-full">
+                <div className="flex-1 flex justify-center w-full">
+                    <Table />
+                </div>
+                <div className="hidden md:block">
+                    <VotesPanel />
+                </div>
             </main>
+
 
             {/* Floating UI */}
             <VotingCards />

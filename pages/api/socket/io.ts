@@ -22,6 +22,7 @@ export const config = {
 const ioHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
     if (!res.socket.server.io) {
         const path = "/api/socket/io";
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const httpServer: NetServer = res.socket.server as any;
         const io = new ServerIO(httpServer, {
             path: path,
@@ -46,7 +47,19 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
 
                 const room = rooms[roomId];
 
-                // Check if participant already exists (prevent duplicates)
+                // Check for existing participant with same name (handle potential stale sessions/refresh)
+                const existingParticipantId = Object.keys(room.participants).find(
+                    id => room.participants[id].name === name
+                );
+
+                if (existingParticipantId && existingParticipantId !== socket.id) {
+                    // Remove the old participant entry
+                    delete room.participants[existingParticipantId];
+                    // Optionally notify that the old session was removed?
+                    // For now, just silently cleanup to avoid duplicates.
+                }
+
+                // Check if participant already exists (prevent duplicates by socket id)
                 if (!room.participants[socket.id]) {
                     const participant: Participant = {
                         id: socket.id,
@@ -58,7 +71,7 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
                     room.participants[socket.id] = participant;
                     io.to(roomId).emit("participant-join", { name });
                 } else {
-                    // Update existing participant's name if rejoining
+                    // Update existing participant's name if rejoining (though we handled name clash above)
                     room.participants[socket.id].name = name;
                 }
 
@@ -88,6 +101,7 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
                 const room = rooms[roomId];
                 if (room) {
                     room.revealed = false;
+                    delete room.consensus;
                     Object.values(room.participants).forEach(p => p.vote = undefined);
                     io.to(roomId).emit("room-state", room);
                 }
@@ -105,6 +119,17 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
                 const room = rooms[roomId];
                 if (room && room.participants[socket.id]) {
                     room.participants[socket.id].avatar = avatar;
+                    io.to(roomId).emit("room-state", room);
+                }
+            });
+
+            socket.on("set-consensus", ({ roomId, value, description }) => {
+                const room = rooms[roomId];
+                // Only allow setting consensus if revealed? Or any time? Usually after reveal.
+                if (room) {
+                    room.consensus = { value, description };
+                    // Ensure it is revealed if not already (though UI should handle this)
+                    room.revealed = true;
                     io.to(roomId).emit("room-state", room);
                 }
             });

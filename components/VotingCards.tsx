@@ -4,7 +4,7 @@ import { useRoomStore } from "@/store/roomStore";
 import { getSocket } from "@/lib/socket";
 import { FIBONACCI_VALUES, TSHIRT_VALUES, EstimationMode } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+// import { motion } from "framer-motion";
 
 export function VotingCards() {
     const { roomState } = useRoomStore();
@@ -22,7 +22,7 @@ export function VotingCards() {
     const handleVote = (value: string) => {
         if (!roomState.roomId) return;
         // Toggle vote if clicking same
-        const newValue = currentVote === value ? null : value;
+        // const newValue = currentVote === value ? null : value;
         // For now the backend expects a value, let's just send it. 
         // If we want toggle off, we might need a clear-vote event or send empty string?
         // Current backend impl: room.participants[socket.id].vote = value;

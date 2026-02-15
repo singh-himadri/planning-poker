@@ -3,17 +3,21 @@
 import { useRoomStore } from "@/store/roomStore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { getSocket } from "@/lib/socket";
 import { Check, Crown, Eye, RefreshCw, Upload } from "lucide-react";
-import { EstimationMode } from "@/lib/types";
-import { useRef } from "react";
+import { EstimationMode, Participant } from "@/lib/types";
+import { useRef, useState } from "react";
+import { ConsensusDialog } from "@/components/ConsensusDialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function Table() {
     const { roomState } = useRoomStore();
     const socket = getSocket();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [consensusDialogOpen, setConsensusDialogOpen] = useState(false);
+    const [candidateConsensus, setCandidateConsensus] = useState<string | null>(null);
+
 
     if (!roomState) return null;
 
@@ -31,6 +35,22 @@ export function Table() {
     const handleReset = () => {
         socket.emit("reset-round", { roomId: roomState.roomId });
     };
+
+    const handleConsensusSelection = (value: string) => {
+        setCandidateConsensus(value);
+        setConsensusDialogOpen(true);
+    };
+
+    const confirmConsensus = (description: string) => {
+        if (candidateConsensus) {
+            socket.emit("set-consensus", {
+                roomId: roomState.roomId,
+                value: candidateConsensus,
+                description
+            });
+        }
+    };
+
 
     const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -56,8 +76,8 @@ export function Table() {
         if (roomState.mode === EstimationMode.FIBONACCI) {
             const numericVotes = votes.map(v => v === "?" ? null : parseFloat(v)).filter(v => v !== null) as number[];
             if (numericVotes.length > 0) {
-                const sum = numericVotes.reduce((a, b) => a + b, 0);
-                const avg = (sum / numericVotes.length).toFixed(1);
+                // const sum = numericVotes.reduce((a, b) => a + b, 0);
+                // const avg = (sum / numericVotes.length).toFixed(1);
                 const min = Math.min(...numericVotes);
                 const max = Math.max(...numericVotes);
                 const allEqual = numericVotes.every(v => v === numericVotes[0]);
@@ -73,10 +93,6 @@ export function Table() {
                             <div className="flex flex-col items-center gap-2">
                                 <span className="text-xs font-bold text-orange-500 uppercase tracking-wide border px-2 rounded-full border-orange-200 bg-orange-50 dark:bg-orange-950/30 dark:border-orange-900">No Consensus</span>
                                 <div className="flex items-center gap-4">
-                                    <div className="flex flex-col px-2">
-                                        <span className="text-xs text-muted-foreground">Avg</span>
-                                        <span className="text-xl font-bold">{avg}</span>
-                                    </div>
                                     <div className="flex flex-col px-2 border-l border-r border-border/50">
                                         <span className="text-xs text-muted-foreground">Min</span>
                                         <span className="text-lg text-blue-600 dark:text-blue-400">{min}</span>
@@ -121,6 +137,61 @@ export function Table() {
     const maxVote = revealed && !votes.every(v => v === votes[0]) && roomState.mode === EstimationMode.FIBONACCI
         ? Math.max(...votes.map(v => parseFloat(v)).filter(n => !isNaN(n)))
         : null;
+    if (roomState.consensus) {
+        consensusNode = (
+            <div className="flex flex-col items-center gap-4 animate-in zoom-in slide-in-from-bottom-5 duration-500 w-full max-w-md px-4">
+                <span className="text-xs uppercase tracking-widest text-muted-foreground">Final Consensus</span>
+                <div className="flex items-start justify-center gap-4 w-full">
+                    <div className="w-10 h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg shadow-xl flex items-center justify-center text-lg font-bold text-white border-2 border-white dark:border-gray-800 ring-2 ring-green-500/30 shrink-0">
+                        {roomState.consensus.value}
+                    </div>
+
+                    {roomState.consensus.description && (
+                        <div className="bg-background/50 backdrop-blur-md p-2 rounded-md border shadow-sm text-center flex-1 min-w-0">
+                            <span className="text-[10px] text-muted-foreground uppercase">Notes</span>
+                            <p className="text-xs font-medium line-clamp-2">{roomState.consensus.description}</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    } else if (revealed && hasVotes) {
+        // ... (Keep existing stats logic optionally, or replace/augment with interactive cards)
+        // Let's keep stats but make the cards interactive for selection
+
+        // We need to show the cards that were voted on to allow selection
+        const uniqueVotes = Array.from(new Set(votes));
+
+        // This replaces the previous consensusNode logic if we want to show interactive cards *instead* of just stats
+        // OR we can show stats AND allows selection from a list?
+        // User asked: "After the votes are revealed show the cards at the center of the table"
+
+        consensusNode = (
+            <div className="flex flex-col items-center gap-4">
+                <div className="flex gap-2 flex-wrap justify-center">
+                    <TooltipProvider>
+                        {uniqueVotes.map(vote => (
+                            <Tooltip key={vote}>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => handleConsensusSelection(vote)}
+                                        className="w-12 h-16 bg-card border hover:border-primary hover:scale-110 hover:-translate-y-1 transition-all rounded-md shadow-sm flex items-center justify-center font-bold text-lg"
+                                    >
+                                        {vote}
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Choose as Consensus</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        ))}
+                    </TooltipProvider>
+                </div>
+                <span className="text-xs text-muted-foreground">Click a card to select consensus</span>
+            </div>
+        );
+    }
+
 
     return (
         <div className="relative w-full max-w-4xl mx-auto h-[700px] flex flex-col justify-center items-center">
@@ -133,13 +204,19 @@ export function Table() {
             />
 
             {/* Table Surface */}
-            <div className="relative w-[300px] md:w-[600px] h-[230px] bg-indigo-100/30 dark:bg-indigo-900/30 border-4 border-indigo-200 dark:border-indigo-800 rounded-[100px] flex items-center justify-center shadow-xl backdrop-blur-sm">
+            <div className="relative w-[300px] md:w-[700px] h-[230px] bg-indigo-100/30 dark:bg-indigo-900/30 border-4 border-indigo-200 dark:border-indigo-800 rounded-[100px] flex items-center justify-center shadow-xl backdrop-blur-sm">
 
                 {/* Center Content */}
                 <div className="flex flex-col items-center gap-2 z-10 w-full px-4">
                     {revealed ? (
                         <div className="flex flex-col items-center gap-2 animate-in fade-in zoom-in duration-300">
                             {consensusNode}
+                            <ConsensusDialog
+                                open={consensusDialogOpen}
+                                onOpenChange={setConsensusDialogOpen}
+                                selectedValue={candidateConsensus || ""}
+                                onConfirm={confirmConsensus}
+                            />
                             <Button
                                 variant="default"
                                 size="sm"
@@ -170,7 +247,6 @@ export function Table() {
                             key={p.id}
                             player={p}
                             revealed={revealed}
-                            position="top"
                             minVote={minVote}
                             maxVote={maxVote}
                             isSelf={p.id === socket.id}
@@ -186,7 +262,6 @@ export function Table() {
                             key={p.id}
                             player={p}
                             revealed={revealed}
-                            position="bottom"
                             minVote={minVote}
                             maxVote={maxVote}
                             isSelf={p.id === socket.id}
@@ -200,7 +275,22 @@ export function Table() {
     );
 }
 
-function PlayerSeat({ player, revealed, position, minVote, maxVote, isSelf, onAvatarClick }: { player: any, revealed: boolean, position: "top" | "bottom", minVote?: number | null, maxVote?: number | null, isSelf?: boolean, onAvatarClick?: () => void }) {
+
+function PlayerSeat({
+    player,
+    revealed,
+    minVote,
+    maxVote,
+    isSelf,
+    onAvatarClick
+}: {
+    player: Participant,
+    revealed: boolean,
+    minVote?: number | null,
+    maxVote?: number | null,
+    isSelf?: boolean,
+    onAvatarClick?: () => void
+}) {
     const isMin = revealed && minVote !== null && parseFloat(player.vote) === minVote;
     const isMax = revealed && maxVote !== null && parseFloat(player.vote) === maxVote;
 
