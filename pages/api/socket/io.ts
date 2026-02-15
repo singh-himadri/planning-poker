@@ -134,6 +134,21 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
                 }
             });
 
+            socket.on("leave-room", ({ roomId }) => {
+                const room = rooms[roomId];
+                if (room && room.participants[socket.id]) {
+                    delete room.participants[socket.id];
+                    socket.leave(roomId);
+                    io.to(roomId).emit("participant-leave", { id: socket.id });
+                    io.to(roomId).emit("room-state", room);
+
+                    // Clean up empty rooms
+                    if (Object.keys(room.participants).length === 0) {
+                        delete rooms[roomId];
+                    }
+                }
+            });
+
             socket.on("disconnecting", () => {
                 const roomsToLeave = [...socket.rooms];
                 roomsToLeave.forEach(roomId => {

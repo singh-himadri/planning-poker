@@ -59,5 +59,6 @@ export interface ClientToServerEvents {
     "change-mode": (data: { roomId: string; mode: EstimationMode }) => void;
     "update-avatar": (data: { roomId: string; avatar: string }) => void;
     "set-consensus": (data: { roomId: string; value: string; description?: string }) => void;
+    "leave-room": (data: { roomId: string }) => void;
     "ping": () => void;
 }

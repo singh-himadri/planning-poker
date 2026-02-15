@@ -58,7 +58,6 @@ export function Table() {
             const reader = new FileReader();
             reader.onloadend = () => {
                 const base64 = reader.result as string;
-                // Basic size check (approx 1MB limit)
                 if (base64.length > 1500000) {
                     alert("Image too large! Please choose a smaller image.");
                     return;
@@ -76,8 +75,6 @@ export function Table() {
         if (roomState.mode === EstimationMode.FIBONACCI) {
             const numericVotes = votes.map(v => v === "?" ? null : parseFloat(v)).filter(v => v !== null) as number[];
             if (numericVotes.length > 0) {
-                // const sum = numericVotes.reduce((a, b) => a + b, 0);
-                // const avg = (sum / numericVotes.length).toFixed(1);
                 const min = Math.min(...numericVotes);
                 const max = Math.max(...numericVotes);
                 const allEqual = numericVotes.every(v => v === numericVotes[0]);
@@ -156,15 +153,7 @@ export function Table() {
             </div>
         );
     } else if (revealed && hasVotes) {
-        // ... (Keep existing stats logic optionally, or replace/augment with interactive cards)
-        // Let's keep stats but make the cards interactive for selection
-
-        // We need to show the cards that were voted on to allow selection
         const uniqueVotes = Array.from(new Set(votes));
-
-        // This replaces the previous consensusNode logic if we want to show interactive cards *instead* of just stats
-        // OR we can show stats AND allows selection from a list?
-        // User asked: "After the votes are revealed show the cards at the center of the table"
 
         consensusNode = (
             <div className="flex flex-col items-center gap-4">
@@ -291,8 +280,8 @@ function PlayerSeat({
     isSelf?: boolean,
     onAvatarClick?: () => void
 }) {
-    const isMin = revealed && minVote !== null && parseFloat(player.vote) === minVote;
-    const isMax = revealed && maxVote !== null && parseFloat(player.vote) === maxVote;
+    const isMin = revealed && minVote !== null && player.vote && parseFloat(player.vote) === minVote;
+    const isMax = revealed && maxVote !== null && player.vote && parseFloat(player.vote) === maxVote;
 
     return (
         <div className="flex flex-col items-center gap-2 group w-20">

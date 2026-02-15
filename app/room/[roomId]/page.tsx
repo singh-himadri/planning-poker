@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { getSocket } from "@/lib/socket";
 import { useRoomStore } from "@/store/roomStore";
 import { VotingCards } from "@/components/VotingCards";
@@ -27,6 +27,7 @@ import { ModeToggle } from "@/components/mode-toggle";
 export default function RoomPage() {
     const params = useParams();
     const searchParams = useSearchParams();
+    const router = useRouter();
     // Safe access or cast
     const roomId = params?.roomId as string || "";
     const initialName = searchParams?.get("name") || "";
@@ -110,6 +111,13 @@ export default function RoomPage() {
         getSocket().emit("change-mode", { roomId, mode: mode as EstimationMode });
     };
 
+    const handleLeaveRoom = () => {
+        const socket = getSocket();
+        socket.emit("leave-room", { roomId });
+        socket.disconnect();
+        router.push("/");
+    };
+
     return (
         <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
             {/* Ambient Bacground */}
@@ -161,7 +169,7 @@ export default function RoomPage() {
                                 {/* Mobile Mode Switch - Simplified */}
                                 Switch Mode (Use Desktop for full controls)
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => window.location.reload()}>
+                            <DropdownMenuItem onClick={handleLeaveRoom}>
                                 <LogOut className="h-4 w-4 mr-2" />
                                 Leave Room
                             </DropdownMenuItem>
