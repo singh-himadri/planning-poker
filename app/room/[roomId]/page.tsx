@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EstimationMode } from "@/lib/types";
-import { Copy, LogOut, Settings } from "lucide-react";
+import { Check, Copy, LogOut, Settings } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -28,12 +28,12 @@ export default function RoomPage() {
     const params = useParams();
     const searchParams = useSearchParams();
     const router = useRouter();
-    // Safe access or cast
     const roomId = params?.roomId as string || "";
     const initialName = searchParams?.get("name") || "";
 
     const [name, setName] = useState(initialName);
     const [hasJoined, setHasJoined] = useState(false);
+    const [copied, setCopied] = useState(false);
     const { roomState, setRoomState, setUsername } = useRoomStore();
     const [isClient, setIsClient] = useState(false);
 
@@ -57,7 +57,6 @@ export default function RoomPage() {
                     setRoomState(state);
                 });
 
-                // Ensure socket is connected (will trigger connect event if not already)
                 if (!socket.connected) {
                     socket.connect();
                 }
@@ -70,15 +69,12 @@ export default function RoomPage() {
                 const socket = getSocket();
                 socket.off("connect");
                 socket.off("room-state");
-                // Don't disconnect here to allow hot reload perseverance in dev, 
-                // but in prod we might want to.
-                // socket.disconnect(); 
             };
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [name, roomId, hasJoined]); // Safe dependency list for join logic
+    }, [name, roomId, hasJoined]);
 
-    if (!isClient) return null; // Hydration fix
+    if (!isClient) return null;
 
     if (!hasJoined || !name) {
         return (
@@ -103,7 +99,12 @@ export default function RoomPage() {
     }
 
     const handleCopyLink = () => {
-        navigator.clipboard.writeText(window.location.href);
+        const pathParts = window.location.pathname.split("/");
+        const roomCode = pathParts[pathParts.length - 1];
+
+        navigator.clipboard.writeText(roomCode);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
 
     const handleChangeMode = (mode: string) => {
@@ -121,18 +122,28 @@ export default function RoomPage() {
     return (
         <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
             {/* Ambient Bacground */}
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 via-background to-purple-50/50 dark:from-indigo-950/20 dark:to-purple-950/20 -z-10" />
+            <div className="absolute inset-0 bg-linear-to-br from-indigo-50/50 via-background to-purple-50/50 dark:from-indigo-950/20 dark:to-purple-950/20 -z-10" />
 
             {/* Header */}
             <header className="p-4 flex items-center justify-between z-10">
                 <div className="flex items-center gap-2">
-                    <div className="bg-primary text-primary-foreground p-2 rounded-lg font-bold">PP</div>
+                    <img src="/planning_poker.svg" alt="Download" className="w-10 h-10" />
                     <div>
                         <h1 className="font-bold leading-none">Planning Poker</h1>
                         <span className="text-xs text-muted-foreground flex items-center gap-1">
                             Room: {roomId}
-                            <button onClick={handleCopyLink} className="hover:text-foreground">
-                                <Copy className="h-3 w-3" />
+                            <button
+                                onClick={handleCopyLink}
+                                className="relative hover:text-foreground transition-colors group"
+                            >
+                                {copied ? (
+                                    <Check className="h-3 w-3 text-green-500" />
+                                ) : (
+                                    <Copy className="h-3 w-3" />
+                                )}
+                                <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-popover text-popover-foreground border text-[10px] px-1.5 py-0.5 shadow opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {copied ? "Copied party code!" : "Copy room code"}
+                                </span>
                             </button>
                         </span>
                     </div>
@@ -181,11 +192,9 @@ export default function RoomPage() {
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 flex flex-col md:flex-row items-start justify-center p-4 gap-8 relative overflow-y-auto w-full">
-                <div className="flex-1 flex justify-center w-full">
-                    <Table />
-                </div>
-                <div className="hidden md:block">
+            <main className="flex-1 flex items-center justify-center p-4 pb-32 relative overflow-y-auto w-full">
+                <Table />
+                <div className="hidden md:block absolute right-4 top-4">
                     <VotesPanel />
                 </div>
             </main>

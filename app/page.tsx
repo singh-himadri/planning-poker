@@ -55,19 +55,17 @@ export default function Home() {
         <Card className="w-full max-w-md relative z-10 shadow-2xl border-2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl">
           <CardHeader className="space-y-4 pb-4">
             {/* Icon */}
-            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 dark:from-blue-600 dark:via-indigo-600 dark:to-purple-600 rounded-2xl shadow-lg flex items-center justify-center">
-              <svg
-                  className="w-8 h-8 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-              >
-                <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                />
+            <div className="mx-auto w-16 h-16 flex items-center justify-center text-foreground">
+              <svg viewBox="40 30 160 180" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-16 h-16">
+                {/* Accent shadow card */}
+                <rect x="50" y="40" width="140" height="160" rx="16" stroke="currentColor" strokeWidth="4" fill="none" opacity="0.15" />
+                {/* Card background */}
+                <rect x="40" y="30" width="140" height="160" rx="16" stroke="currentColor" strokeWidth="6" fill="none" />
+                {/* Corner dots */}
+                <circle cx="65" cy="55" r="6" fill="currentColor" />
+                <circle cx="155" cy="165" r="6" fill="currentColor" />
+                {/* Check mark */}
+                <path d="M80 115 L100 135 L140 90" stroke="currentColor" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
 

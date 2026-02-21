@@ -23,6 +23,7 @@ export interface RoomState {
     roomId: string;
     mode: EstimationMode;
     revealed: boolean;
+    storyName?: string;
     participants: Record<string, Participant>;
     consensus?: {
         value: string;
@@ -59,6 +60,7 @@ export interface ClientToServerEvents {
     "change-mode": (data: { roomId: string; mode: EstimationMode }) => void;
     "update-avatar": (data: { roomId: string; avatar: string }) => void;
     "set-consensus": (data: { roomId: string; value: string; description?: string }) => void;
+    "set-story": (data: { roomId: string; storyName: string }) => void;
     "leave-room": (data: { roomId: string }) => void;
     "ping": () => void;
 }

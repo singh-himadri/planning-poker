@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { getSocket } from "@/lib/socket";
 import { Check, Crown, Eye, RefreshCw, Upload } from "lucide-react";
 import { EstimationMode, Participant } from "@/lib/types";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { ConsensusDialog } from "@/components/ConsensusDialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -17,6 +17,26 @@ export function Table() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [consensusDialogOpen, setConsensusDialogOpen] = useState(false);
     const [candidateConsensus, setCandidateConsensus] = useState<string | null>(null);
+    const [localStoryName, setLocalStoryName] = useState("");
+
+    // Sync storyName from room state (when other users update it)
+    useEffect(() => {
+        if (roomState?.storyName !== undefined) {
+            setLocalStoryName(roomState.storyName);
+        }
+    }, [roomState?.storyName]);
+
+    // Debounced emit to socket
+    const storyDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const handleStoryChange = (value: string) => {
+        setLocalStoryName(value);
+        if (storyDebounceRef.current) clearTimeout(storyDebounceRef.current);
+        storyDebounceRef.current = setTimeout(() => {
+            if (roomState) {
+                socket.emit("set-story", { roomId: roomState.roomId, storyName: value });
+            }
+        }, 500);
+    };
 
 
     if (!roomState) return null;
@@ -183,7 +203,7 @@ export function Table() {
 
 
     return (
-        <div className="relative w-full max-w-4xl mx-auto h-[700px] flex flex-col justify-center items-center">
+        <div className="relative w-full max-w-4xl flex flex-col items-center">
             <input
                 type="file"
                 ref={fileInputRef}
@@ -192,9 +212,21 @@ export function Table() {
                 onChange={handleAvatarUpload}
             />
 
-            {/* Table Surface */}
-            <div className="relative w-[300px] md:w-[700px] h-[230px] bg-indigo-100/30 dark:bg-indigo-900/30 border-4 border-indigo-200 dark:border-indigo-800 rounded-[100px] flex items-center justify-center shadow-xl backdrop-blur-sm">
+            {/* Story Name Input */}
+            <div className="w-full max-w-md mb-10">
+                <input
+                    type="text"
+                    value={localStoryName}
+                    onChange={(e) => handleStoryChange(e.target.value)}
+                    placeholder="What are we estimating? (e.g. PROJ-123)"
+                    className="w-full text-center text-lg font-bold bg-transparent border-b-2 border-dashed border-muted-foreground/40 hover:border-muted-foreground/70 ]
+                    focus:border-primary focus:outline-none transition-colors py-1 placeholder:text-muted-foreground/50"
+                />
+            </div>
 
+            {/* Table Surface — mt/mb make room for the absolutely-positioned participant rows */}
+            <div className="relative w-[300px] md:w-[700px] h-[230px] mt-28 mb-28
+            bg-indigo-200/30 dark:bg-indigo-900/30 border-4 border-indigo-400 dark:border-indigo-800 rounded-[100px] flex items-center justify-center shadow-xl backdrop-blur-sm">
                 {/* Center Content */}
                 <div className="flex flex-col items-center gap-2 z-10 w-full px-4">
                     {revealed ? (

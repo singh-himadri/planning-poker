@@ -134,6 +134,14 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
                 }
             });
 
+            socket.on("set-story", ({ roomId, storyName }) => {
+                const room = rooms[roomId];
+                if (room) {
+                    room.storyName = storyName;
+                    io.to(roomId).emit("room-state", room);
+                }
+            });
+
             socket.on("leave-room", ({ roomId }) => {
                 const room = rooms[roomId];
                 if (room && room.participants[socket.id]) {
